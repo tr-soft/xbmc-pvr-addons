@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon
+  id="pvr.sledovanitv"
+  version="1.0"
+  name="PVR Client for SledovaniTV.cz"
+  provider-name="Michal Hrouda">
+  <requires>
+    <c-pluff version="0.1"/>
+    <import addon="xbmc.pvr" version="1.9.2"/>
+  </requires>
+  <extension
+    point="xbmc.pvrclient"
+    library_linux="Kodi_SledovaniTV.pvr"
+	library_osx="Kodi_SledovaniTV.pvr"
+    library_freebsd="Kodi_SledovaniTV.pvr"
+    library_wingl="Kodi_SledovaniTV_win32.dll"
+    library_windx="Kodi_SledovaniTV_win32.dll"
+    library_android="libKodi_SledovaniTV.so" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="cs">Klient PVR pro službu sledování TV</summary>
+    <summary lang="en">PVR Client for sledovani TV service</summary>
+    <summary lang="en_AU">PVR Client for sledovani TV service</summary>
+    <summary lang="en_NZ">PVR Client for sledovani TV service</summary>
+    <summary lang="en_US">PVR Client for sledovani TV service</summary>
+    <description lang="cs">Klient PVR pro službu sledování TV</description>
+    <description lang="en">PVR Client for sledovani TV service</description>
+    <description lang="en_AU">PVR Client for sledovani TV service</description>
+    <description lang="en_NZ">PVR Client for sledovani TV service</description>
+    <description lang="en_US">PVR Client for sledovani TV service</description>
+    <disclaimer lang="cs"></disclaimer>
+    <disclaimer lang="en"></disclaimer>
+    <disclaimer lang="en_AU"></disclaimer>
+    <disclaimer lang="en_NZ"></disclaimer>
+    <disclaimer lang="en_US"></disclaimer>
+    <platform>wingl windx</platform>
+  </extension>
+</addon>

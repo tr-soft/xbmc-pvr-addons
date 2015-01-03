@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2013 for Windows Desktop
-VisualStudioVersion = 12.0.21005.1
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "platform", "platform\platform.vcxproj", "{FE4573F6-A794-4AD3-B37F-49E51F1140E6}"
 EndProject
@@ -54,6 +54,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libjansson", "..\..\lib\cppmyth\project\VS2010Express\jansson\libjansson.vcxproj", "{E95631F0-9035-4BE4-B8E1-E2C6B0E3F0C3}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcppmyth", "..\..\lib\cppmyth\project\VS2010Express\cppmyth\libcppmyth.vcxproj", "{086B2F32-C84B-481C-BB7E-ACCB4B2A0671}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pvr.sledovanitv", "..\..\addons\pvr.sledovanitv\project\VS2010Express\pvrclient_sledovanitv.vcxproj", "{05BB9A39-5A1A-4E70-83FB-36692C767FFA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -319,6 +321,18 @@ Global
 		{086B2F32-C84B-481C-BB7E-ACCB4B2A0671}.RelWithDebInfo|Win32.ActiveCfg = RelWithDebInfo|Win32
 		{086B2F32-C84B-481C-BB7E-ACCB4B2A0671}.RelWithDebInfo|Win32.Build.0 = RelWithDebInfo|Win32
 		{086B2F32-C84B-481C-BB7E-ACCB4B2A0671}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.Debug|Win32.Build.0 = Debug|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.Debug|x64.ActiveCfg = Debug|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.MinSizeRel|Win32.ActiveCfg = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.MinSizeRel|Win32.Build.0 = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.MinSizeRel|x64.ActiveCfg = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.Release|Win32.ActiveCfg = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.Release|Win32.Build.0 = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.Release|x64.ActiveCfg = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.RelWithDebInfo|Win32.ActiveCfg = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.RelWithDebInfo|Win32.Build.0 = Release|Win32
+		{05BB9A39-5A1A-4E70-83FB-36692C767FFA}.RelWithDebInfo|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

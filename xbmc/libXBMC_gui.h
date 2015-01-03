@@ -36,7 +36,7 @@ typedef void* GUIHANDLE;
 #endif
 
 /* current ADDONGUI API version */
-#define XBMC_GUI_API_VERSION "5.3.0"
+#define XBMC_GUI_API_VERSION "5.6.0"
 
 /* min. ADDONGUI API version */
 #define XBMC_GUI_MIN_API_VERSION "5.3.0"
@@ -48,6 +48,7 @@ class CAddonGUIWindow;
 class CAddonGUISpinControl;
 class CAddonGUIRadioButton;
 class CAddonGUIProgressControl;
+class CAddonGUIEditControl;
 class CAddonListItem;
 class CAddonGUIRenderingControl;
 
@@ -121,6 +122,10 @@ public:
       dlsym(m_libXBMC_gui, "GUI_get_video_resolution");
     if (GUI_get_video_resolution == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
 
+    GUI_get_info_label = (const char * (*)(void *HANDLE, void *CB, const char *label, int context))
+      dlsym(m_libXBMC_gui, "GUI_get_info_label");
+    if (GUI_get_info_label == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
+
     GUI_Window_create = (CAddonGUIWindow* (*)(void *HANDLE, void *CB, const char *xmlFilename, const char *defaultSkin, bool forceFallback, bool asDialog))
       dlsym(m_libXBMC_gui, "GUI_Window_create");
     if (GUI_Window_create == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
@@ -152,6 +157,14 @@ public:
     GUI_control_release_progress = (void (*)(CAddonGUIProgressControl* p))
       dlsym(m_libXBMC_gui, "GUI_control_release_progress");
     if (GUI_control_release_progress == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
+
+    GUI_control_get_edit = (CAddonGUIEditControl* (*)(void *HANDLE, void *CB, CAddonGUIWindow *window, int controlId))
+      dlsym(m_libXBMC_gui, "GUI_control_get_edit");
+    if (GUI_control_get_edit == NULL)  { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
+
+    GUI_control_release_edit = (void(*)(CAddonGUIEditControl* p))
+      dlsym(m_libXBMC_gui, "GUI_control_release_edit");
+    if (GUI_control_release_edit == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
 
     GUI_ListItem_create = (CAddonListItem* (*)(void *HANDLE, void *CB, const char *label, const char *label2, const char *iconImage, const char *thumbnailImage, const char *path))
       dlsym(m_libXBMC_gui, "GUI_ListItem_create");
@@ -199,6 +212,11 @@ public:
     return GUI_get_video_resolution(m_Handle, m_Callbacks);
   }
 
+  const char *GetInfoLabel(const char *label, int context)
+  {
+    return GUI_get_info_label(m_Handle, m_Callbacks, label, context);
+  }
+
   CAddonGUIWindow* Window_create(const char *xmlFilename, const char *defaultSkin, bool forceFallback, bool asDialog)
   {
     return GUI_Window_create(m_Handle, m_Callbacks, xmlFilename, defaultSkin, forceFallback, asDialog);
@@ -239,6 +257,16 @@ public:
     return GUI_control_release_progress(p);
   }
 
+  CAddonGUIEditControl* Control_getEdit(CAddonGUIWindow *window, int controlId)
+  {
+	  return GUI_control_get_edit(m_Handle, m_Callbacks, window, controlId);
+  }
+
+  void Control_releaseEdit(CAddonGUIEditControl* p)
+  {
+	  return GUI_control_release_edit(p);
+  }
+
   CAddonListItem* ListItem_create(const char *label, const char *label2, const char *iconImage, const char *thumbnailImage, const char *path)
   {
     return GUI_ListItem_create(m_Handle, m_Callbacks, label, label2, iconImage, thumbnailImage, path);
@@ -267,6 +295,7 @@ protected:
   int (*GUI_get_screen_height)(void *HANDLE, void* CB);
   int (*GUI_get_screen_width)(void *HANDLE, void* CB);
   int (*GUI_get_video_resolution)(void *HANDLE, void* CB);
+  const char *(*GUI_get_info_label)(void *HANDLE, void* CB, const char *label, int context);
   CAddonGUIWindow* (*GUI_Window_create)(void *HANDLE, void* CB, const char *xmlFilename, const char *defaultSkin, bool forceFallback, bool asDialog);
   void (*GUI_Window_destroy)(CAddonGUIWindow* p);
   CAddonGUISpinControl* (*GUI_control_get_spin)(void *HANDLE, void* CB, CAddonGUIWindow *window, int controlId);
@@ -275,6 +304,8 @@ protected:
   void (*GUI_control_release_radiobutton)(CAddonGUIRadioButton* p);
   CAddonGUIProgressControl* (*GUI_control_get_progress)(void *HANDLE, void* CB, CAddonGUIWindow *window, int controlId);
   void (*GUI_control_release_progress)(CAddonGUIProgressControl* p);
+  CAddonGUIEditControl* (*GUI_control_get_edit)(void *HANDLE, void* CB, CAddonGUIWindow *window, int controlId);
+  void(*GUI_control_release_edit)(CAddonGUIEditControl* p);
   CAddonListItem* (*GUI_ListItem_create)(void *HANDLE, void* CB, const char *label, const char *label2, const char *iconImage, const char *thumbnailImage, const char *path);
   void (*GUI_ListItem_destroy)(CAddonListItem* p);
   CAddonGUIRenderingControl* (*GUI_control_get_rendering)(void *HANDLE, void* CB, CAddonGUIWindow *window, int controlId);
@@ -350,6 +381,23 @@ private:
   void *m_cb;
 };
 
+class CAddonGUIEditControl
+{
+public:
+  CAddonGUIEditControl(void *hdl, void *cb, CAddonGUIWindow *window, int controlId);
+  virtual ~CAddonGUIEditControl(void) {}
+
+  virtual const char *GetLabel2() const;
+  virtual void SetLabel2(const char *label);
+
+private:
+  CAddonGUIWindow *m_Window;
+  int         m_ControlId;
+  GUIHANDLE   m_EditHandle;
+  void *m_Handle;
+  void *m_cb;
+};
+
 class CAddonListItem
 {
 friend class CAddonGUIWindow;
@@ -382,6 +430,7 @@ class CAddonGUIWindow
 friend class CAddonGUISpinControl;
 friend class CAddonGUIRadioButton;
 friend class CAddonGUIProgressControl;
+friend class CAddonGUIEditControl;
 friend class CAddonGUIRenderingControl;
 
 public:

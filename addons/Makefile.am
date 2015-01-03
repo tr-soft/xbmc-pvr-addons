@@ -15,6 +15,7 @@ SUBDIRS = pvr.argustv \
           pvr.mythtv \
           pvr.nextpvr \
           pvr.njoy \
+		  pvr.sledovanitv \
           pvr.vdr.vnsi \
           pvr.vuplus \
           pvr.wmc \
