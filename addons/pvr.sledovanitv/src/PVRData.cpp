@@ -20,6 +20,9 @@
  *
  */
 
+#include <cstdlib>
+#include <cstdio>
+
 #include "tinyxml/XMLUtils.h"
 #include "PVRData.h"
 #include "DialogLogin.h"
@@ -153,28 +156,31 @@ bool PVRData::LoadPersistentData(void)
 	}
 
 	TiXmlElement *pRootElement = xmlDoc.RootElement();
-	if (strcmp(pRootElement->Value(), "settings") != 0)
+	if (pRootElement)
 	{
-		XBMC->Log(LOG_ERROR, "invalid demo data (no <demo> tag found)");
-		return false;
-	}
-
-	/* load channels */
-	TiXmlNode *pNode = NULL;
-	while ((pNode = pRootElement->IterateChildren(pNode)) != NULL)
-	{
-		CStdString strTmp1, strTmp2;
-
-		if (pNode->Type() == TiXmlNode::TINYXML_ELEMENT)
+		if (strcmp(pRootElement->Value(), "settings") != 0)
 		{
-			TiXmlElement *e = (TiXmlElement*)pNode;
-			std::string sName = e->Attribute("name");
-			std::string sValue = e->Attribute("value");
+			XBMC->Log(LOG_ERROR, "invalid demo data (no <demo> tag found)");
+			return false;
+		}
 
-			if (sName == "registereddeviceid")
-				g_szRegisteredDeviceId = sValue;
-			else if (sName == "registeredpassword")
-				g_szRegisteredPassword = sValue;
+		/* load channels */
+		TiXmlNode *pNode = NULL;
+		while ((pNode = pRootElement->IterateChildren(pNode)) != NULL)
+		{
+			CStdString strTmp1, strTmp2;
+
+			if (pNode->Type() == TiXmlNode::TINYXML_ELEMENT)
+			{
+				TiXmlElement *e = (TiXmlElement*)pNode;
+				std::string sName = e->Attribute("name");
+				std::string sValue = e->Attribute("value");
+
+				if (sName == "registereddeviceid")
+					g_szRegisteredDeviceId = sValue;
+				else if (sName == "registeredpassword")
+					g_szRegisteredPassword = sValue;
+			}
 		}
 	}
 	return (true);
@@ -185,6 +191,8 @@ bool PVRData::SavePersistentData(void)
 	TiXmlDocument xmlDoc;
 
 	string strSettingsFile = GetSettingsFile("persistent.xml", true);
+	if (!XBMC->DirectoryExists(g_strUserPath.c_str()))
+		XBMC->CreateDirectory(g_strUserPath.c_str());
 
 	TiXmlDeclaration * decl = new TiXmlDeclaration("1.0", "", "");
 	if (decl)
@@ -281,7 +289,8 @@ bool PVRData::FillEpgForChannels(time_t iStart, time_t iEnd)
 			iDuration = 600;
 		iStart += iDuration * 60;
 
-		std::string duration = _ltoa(iDuration, tmpBuff, 10);
+		std::sprintf(tmpBuff, "%d", iDuration);
+		std::string duration = tmpBuff;
 
 		int iAddition = 0;
 		Json::Value wholeEpg;
@@ -303,7 +312,6 @@ bool PVRData::FillEpgForChannels(time_t iStart, time_t iEnd)
 							if (entry.isObject() && (!entry.isNull()))
 							{
 								PVREpgEntry tag;
-								memset(&tag, 0, sizeof(PVREpgEntry));
 
 								struct tm tm;
 								memset(&tm, 0, sizeof(struct tm));
@@ -327,7 +335,6 @@ bool PVRData::FillEpgForChannels(time_t iStart, time_t iEnd)
 									{
 										// dira v EPG
 										PVREpgEntry tmp;
-										memset(&tmp, 0, sizeof(PVREpgEntry));
 
 										tmp.startTime = last.endTime;
 										tmp.endTime = tag.startTime;
@@ -397,7 +404,7 @@ bool PVRData::TryToPairDevice(void)
 		std::string serial = GUI->GetInfoLabel("$INFO[Network.MacAddress]", 0);
 		while ((serial.length() > 0) && (serial.find(":") == std::string::npos) && (iTimeout-- > 0))
 		{
-			Sleep(100);
+			sleep(1);
 			serial = GUI->GetInfoLabel("$INFO[Network.MacAddress]", 0);
 		}
 		std::string friendlyName = GUI->GetInfoLabel("$INFO[System.FriendlyName]", 0);
@@ -413,7 +420,8 @@ bool PVRData::TryToPairDevice(void)
 			{
 				char tmpBuff[32];
 				int deviceId = pairResult["deviceId"].asInt();
-				g_szRegisteredDeviceId = _ltoa(deviceId, tmpBuff, 10);
+				std::sprintf(tmpBuff, "%d", deviceId);
+				g_szRegisteredDeviceId = tmpBuff;
 				g_szRegisteredPassword = pairResult["password"].asString();
 
 				SavePersistentData();

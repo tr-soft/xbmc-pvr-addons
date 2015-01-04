@@ -32,6 +32,6 @@
     <disclaimer lang="en_AU"></disclaimer>
     <disclaimer lang="en_NZ"></disclaimer>
     <disclaimer lang="en_US"></disclaimer>
-    <platform>wingl windx</platform>
+    <platform>@OS@</platform>
   </extension>
 </addon>

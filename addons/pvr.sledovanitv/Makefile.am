@@ -17,7 +17,9 @@ include ../Makefile.include.am
 INCLUDES+=-I@abs_top_srcdir@/lib/jsoncpp/include
 
 libpvrsledovanitv_addon_la_SOURCES = src/client.cpp \
-									 src/PVRData.cpp \
-									 src/utils.cpp
+	src/PVRData.cpp \
+	src/utils.cpp \
+	src/DialogLogin.cpp \
+	src/uri.cpp
 libpvrsledovanitv_addon_la_LDFLAGS = @TARGET_LDFLAGS@
 
