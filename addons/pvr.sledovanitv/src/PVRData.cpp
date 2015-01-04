@@ -404,7 +404,11 @@ bool PVRData::TryToPairDevice(void)
 		std::string serial = GUI->GetInfoLabel("$INFO[Network.MacAddress]", 0);
 		while ((serial.length() > 0) && (serial.find(":") == std::string::npos) && (iTimeout-- > 0))
 		{
+#ifdef TARGET_WINDOWS
+			Sleep(1000);
+#else
 			sleep(1);
+#endif
 			serial = GUI->GetInfoLabel("$INFO[Network.MacAddress]", 0);
 		}
 		std::string friendlyName = GUI->GetInfoLabel("$INFO[System.FriendlyName]", 0);
