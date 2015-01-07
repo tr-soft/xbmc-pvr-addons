@@ -353,7 +353,8 @@ bool PVRData::FillEpgForChannels(time_t iStart, time_t iEnd)
 
 								tag.strEventId = entry["eventId"].asString();
 								//tag.iBroadcastId = iUniqueId++;
-								tag.iBroadcastId = GetStringFNV1Hash32(tag.strEventId);
+								//tag.iBroadcastId = GetStringFNV1Hash32(tag.strEventId);
+								tag.iBroadcastId = CreateEpgCode(tag.strEventId, tag.startTime, myChannel.iUniqueId);
 								tag.strTitle = entry["title"].asString();
 								tag.iChannelId = myChannel.iChannelNumber;
 								tag.strPlotOutline = "<unread>";
@@ -500,6 +501,37 @@ bool PVRData::ApiCall(const std::string& command, const std::string& arguments, 
 	return (false);
 }
 
+int PVRData::CreateEpgCode(const std::string &eventId, time_t start, int channelId)
+{
+	struct tm tm;
+	tm.tm_year = 2010 - 1900;
+	tm.tm_mon = 0;
+	tm.tm_mday = 1;
+	tm.tm_hour = 0;
+	tm.tm_min = 0;
+	tm.tm_sec = 0;
+
+	int trel = (int)(difftime(start, mktime(&tm)) / 60) & 0xffffff;
+	return ((trel << 8) | channelId);
+}
+
+bool PVRData::BreakEpgCode(int epgCode, time_t *start, int *channelId)
+{
+	struct tm tm;
+	tm.tm_year = 2010 - 1900;
+	tm.tm_mon = 0;
+	tm.tm_mday = 1;
+	tm.tm_hour = 0;
+	tm.tm_min = 0;
+	tm.tm_sec = 0;
+
+	if (start)
+		*start = mktime(&tm) + ((epgCode >> 8) * 60);
+	if (channelId)
+		*channelId = epgCode & 0xff;
+	return (true);
+}
+
 PVRData::PVRData(void)
 {
 	m_iEpgStart = -1;
@@ -514,6 +546,64 @@ PVRData::PVRData(void)
 PVRData::~PVRData(void)
 {
 	m_channels.clear();
+}
+
+PVR_ERROR PVRData::CallMenuHook(const PVR_MENUHOOK &menuhook, const PVR_MENUHOOK_DATA &item)
+{
+	if ((menuhook.category == PVR_MENUHOOK_EPG) && (menuhook.iHookId == 1))
+	{
+		time_t startTime = 0;
+		int channelId = 0;
+
+		if (BreakEpgCode(item.data.iEpgUid, &startTime, &channelId))
+		{
+			for (unsigned int iChannelPtr = 0; iChannelPtr < m_channels.size(); iChannelPtr++)
+			{
+				PVRChannel &channel = m_channels.at(iChannelPtr);
+				if ((!channel.bRadio) && (channel.iUniqueId == channelId))
+				{
+					startTime += 60; // posuneme se az za zacatek poradu
+					struct tm *tm = localtime(&startTime);
+					char tmpBuff[64];
+					std::sprintf(tmpBuff, "%04d-%02d-%02d%%20%02d:%02d", tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, tm->tm_hour, tm->tm_min);
+					std::string tmp = tmpBuff;
+
+					Json::Value epg;
+					if (ApiCall("epg", "time=" + tmp + "&channels=" + channel.strChannelId, epg))
+					{
+						Json::Value epgChannels = epg["channels"];
+						if (epgChannels.isObject() && (!epgChannels.isNull()))
+						{
+							Json::Value epgChannel = epgChannels[channel.strChannelId];
+							if (epgChannel.isArray())
+							{
+								Json::Value prg = epgChannel[(Json::Value::UInt)0];
+								if (prg.isObject() && (!prg.isNull()))
+								{
+									std::string eventId = prg["eventId"].asString();
+									std::string availability = prg["availability"].asString();
+
+									if ((availability == "timeshift") || (availability == "record"))
+									{
+										Json::Value eventInfo;
+										if (ApiCall("event-timeshift", "eventId=" + eventId, eventInfo))
+										{
+											std::string streamUrl = eventInfo["url"].asString();
+											std::string redirected = "";
+
+											if (GetStreamRedirectedURL(streamUrl, redirected))
+												XBMC->ExecuteBuiltinFunction(("PlayMedia(" + redirected + ")").c_str());
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return PVR_ERROR_NO_ERROR;
 }
 
 std::string PVRData::GetSettingsFile(std::string filename, bool user) const
@@ -592,113 +682,121 @@ bool PVRData::GetChannel(const PVR_CHANNEL &channel, PVRChannel &myChannel)
 	return false;
 }
 
+bool PVRData::GetStreamRedirectedURL(const std::string source, std::string &destination)
+{
+	PLATFORM::CLockObject critsec(communication_mutex);
+	bool result = false;
+	std::string url = source;
+	std::string server = "", path = "";
+	int port = 80;
+
+	int iServerPos = url.find("://");
+	if (iServerPos > 0)
+	{
+		int iStreamPathPos = url.find("/", iServerPos + 3);
+		if (iStreamPathPos > 0)
+		{
+			server = url.substr(iServerPos + 3, iStreamPathPos - iServerPos - 3);
+			int iColonPos = server.find(":");
+			if (iColonPos > 0)
+			{
+				server = server.substr(0, iColonPos - 1);
+				port = strtol(server.substr(iColonPos, server.length() - iColonPos - 1).c_str(), NULL, 10);
+			}
+			path = url.substr(iStreamPathPos, url.length() - iStreamPathPos);
+		}
+	}
+
+	std::string buffer = "";
+	std::string message = "", actualLine = "";
+	char content_header[100];
+
+	buffer.append("GET " + path + " HTTP/1.1\r\n");
+	std::sprintf(content_header, "Host: %s:%d\r\n", server.c_str(), port);
+	buffer.append(content_header);
+	buffer.append("Accept: */*\r\n");
+	buffer.append("Accept-Charset: UTF-8,*;q=0.8\r\n");
+	buffer.append("\r\n");
+
+#ifdef TARGET_WINDOWS
+	{
+		WSADATA  WsaData;
+		WSAStartup(0x0101, &WsaData);
+	}
+#endif
+
+	sockaddr_in sin;
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock != -1)
+	{
+		sin.sin_family = AF_INET;
+		sin.sin_port = htons((unsigned short)port);
+
+		struct hostent * host_addr = gethostbyname(server.c_str());
+		if (host_addr != NULL)
+		{
+			sin.sin_addr.s_addr = *((int*)*host_addr->h_addr_list);
+
+			if (connect(sock, (const struct sockaddr *)&sin, sizeof(sockaddr_in)) != -1)
+			{
+				SEND_RQ(buffer.c_str());
+
+				char c1[1];
+				int l, line_length;
+				bool loop = true;
+				bool bHeader = false;
+
+				while (loop)
+				{
+					l = recv(sock, c1, 1, 0);
+					if (l < 0)
+						loop = false;
+					if (c1[0] == '\n')
+					{
+						message += actualLine + "\n";
+						if (line_length == 0)
+							loop = false;
+						line_length = 0;
+						if (message.find("302 Found") != std::string::npos)
+							bHeader = true;
+						if (bHeader)
+						{
+							if (actualLine.find("Location: ") == 0)
+							{
+								destination = actualLine.substr(10, actualLine.length() - 10);
+								result = true;
+							}
+						}
+						actualLine = "";
+					}
+					else if (c1[0] != '\r')
+					{
+						actualLine += c1[0];
+						line_length++;
+					}
+				}
+
+				message = "";
+				if (bHeader)
+				{
+					char p[1024];
+					while ((l = recv(sock, p, 1023, 0)) > 0)  {
+						p[l] = '\0';
+						message += p;
+					}
+				}
+				close(sock);
+			}
+		}
+	}
+	return result;
+}
+
 const char *PVRData::GetLiveStreamURL(const PVR_CHANNEL &channel)
 {
 	PVRChannel mychannel;
 	if (GetChannel(channel, mychannel))
-	{
-		PLATFORM::CLockObject critsec(communication_mutex);
-		std::string url = mychannel.strStreamURL;
-		std::string server = "", path = "";
-		int port = 80;
-
-		int iServerPos = url.find("://");
-		if (iServerPos > 0)
-		{
-			int iStreamPathPos = url.find("/", iServerPos + 3);
-			if (iStreamPathPos > 0)
-			{
-				server = url.substr(iServerPos + 3, iStreamPathPos - iServerPos - 3);
-				int iColonPos = server.find(":");
-				if (iColonPos > 0)
-				{
-					server = server.substr(0, iColonPos - 1);
-					port = strtol(server.substr(iColonPos, server.length() - iColonPos - 1).c_str(), NULL, 10);
-				}
-				path = url.substr(iStreamPathPos, url.length() - iStreamPathPos);
-			}
-		}
-
-		std::string buffer = "";
-		std::string message = "", actualLine = "";
-		char content_header[100];
-
-		buffer.append("GET " + path + " HTTP/1.1\r\n");
-		std::sprintf(content_header, "Host: %s:%d\r\n", server.c_str(), port);
-		buffer.append(content_header);
-		buffer.append("Accept: */*\r\n");
-		buffer.append("Accept-Charset: UTF-8,*;q=0.8\r\n");
-		buffer.append("\r\n");
-
-#ifdef TARGET_WINDOWS
-		{
-			WSADATA  WsaData;
-			WSAStartup(0x0101, &WsaData);
-		}
-#endif
-
-		sockaddr_in sin;
-		int sock = socket(AF_INET, SOCK_STREAM, 0);
-		if (sock != -1)
-		{
-			sin.sin_family = AF_INET;
-			sin.sin_port = htons((unsigned short)port);
-
-			struct hostent * host_addr = gethostbyname(server.c_str());
-			if (host_addr != NULL)
-			{
-				sin.sin_addr.s_addr = *((int*)*host_addr->h_addr_list);
-
-				if (connect(sock, (const struct sockaddr *)&sin, sizeof(sockaddr_in)) != -1)
-				{
-					SEND_RQ(buffer.c_str());
-
-					char c1[1];
-					int l, line_length;
-					bool loop = true;
-					bool bHeader = false;
-
-					while (loop)
-					{
-						l = recv(sock, c1, 1, 0);
-						if (l < 0) 
-							loop = false;
-						if (c1[0] == '\n')
-						{
-							message += actualLine + "\n";
-							if (line_length == 0)
-								loop = false;
-							line_length = 0;
-							if (message.find("302 Found") != std::string::npos)
-								bHeader = true;
-							if (bHeader)
-							{
-								if (actualLine.find("Location: ") == 0)
-									m_LiveStreamUrl = actualLine.substr(10, actualLine.length() - 10);
-							}
-							actualLine = "";
-						}
-						else if (c1[0] != '\r')
-						{
-							actualLine += c1[0];
-							line_length++;
-						}
-					}
-
-					message = "";
-					if (bHeader)
-					{
-						char p[1024];
-						while ((l = recv(sock, p, 1023, 0)) > 0)  {
-							p[l] = '\0';
-							message += p;
-						}
-					}
-					close(sock);
-				}
-			}
-		}
-	}
+		GetStreamRedirectedURL(mychannel.strStreamURL, m_LiveStreamUrl);
 
 	return m_LiveStreamUrl.c_str();
 }

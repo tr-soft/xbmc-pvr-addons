@@ -20,3 +20,7 @@ msgctxt "#30000"
 msgid "SlTV General"
 msgstr "General"
 
+msgctxt "#30401"
+msgid "SlTV PlayTimeshift"
+msgstr "Play recorded"
+

@@ -28,6 +28,10 @@
 #include <stdarg.h>
 
 #ifdef _WIN32                   // windows
+#ifndef _SSIZE_T_DEFINED
+typedef intptr_t      ssize_t;
+#define _SSIZE_T_DEFINED
+#endif // !_SSIZE_T_DEFINED
 #include "dlfcn-win32.h"
 #define ADDON_DLL               "\\library.xbmc.addon\\libXBMC_addon" ADDON_HELPER_EXT
 #define ADDON_HELPER_EXT        ".dll"
@@ -174,6 +178,10 @@ namespace ADDON
         dlsym(m_libXBMC_addon, "XBMC_free_string");
       if (XBMC_free_string == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
 
+      XBMC_execute_builtin_function = (int (*)(void* HANDLE, void* CB, const char* execString))
+        dlsym(m_libXBMC_addon, "XBMC_execute_builtin_function");
+      if (XBMC_execute_builtin_function == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
+
       XBMC_get_dvd_menu_language = (char* (*)(void* HANDLE, void* CB))
         dlsym(m_libXBMC_addon, "XBMC_get_dvd_menu_language");
       if (XBMC_get_dvd_menu_language == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
@@ -186,7 +194,7 @@ namespace ADDON
         dlsym(m_libXBMC_addon, "XBMC_open_file_for_write");
       if (XBMC_open_file_for_write == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
 
-      XBMC_read_file = (unsigned int (*)(void* HANDLE, void* CB, void* file, void* lpBuf, int64_t uiBufSize))
+      XBMC_read_file = (ssize_t (*)(void* HANDLE, void* CB, void* file, void* lpBuf, size_t uiBufSize))
         dlsym(m_libXBMC_addon, "XBMC_read_file");
       if (XBMC_read_file == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
 
@@ -194,7 +202,7 @@ namespace ADDON
         dlsym(m_libXBMC_addon, "XBMC_read_file_string");
       if (XBMC_read_file_string == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
 
-      XBMC_write_file = (int (*)(void* HANDLE, void* CB, void* file, const void* lpBuf, int64_t uiBufSize))
+      XBMC_write_file = (ssize_t (*)(void* HANDLE, void* CB, void* file, const void* lpBuf, size_t uiBufSize))
         dlsym(m_libXBMC_addon, "XBMC_write_file");
       if (XBMC_write_file == NULL) { fprintf(stderr, "Unable to assign function %s\n", dlerror()); return false; }
 
@@ -348,6 +356,11 @@ namespace ADDON
       return XBMC_free_string(m_Handle, m_Callbacks, str);
     }
 
+    int ExecuteBuiltinFunction(const char *execFunction)
+    {
+      return XBMC_execute_builtin_function(m_Handle, m_Callbacks, execFunction);
+    }
+
     /*!
      * @brief Open the file with filename via XBMC's CFile. Needs to be closed by calling CloseFile() when done.
      * @param strFileName The filename to open.
@@ -375,9 +388,11 @@ namespace ADDON
      * @param file The file handle to read from.
      * @param lpBuf The buffer to store the data in.
      * @param uiBufSize The size of the buffer.
-     * @return Number of bytes read.
+     * @return number of successfully read bytes if any bytes were read and stored in
+     *         buffer, zero if no bytes are available to read (end of file was reached)
+     *         or undetectable error occur, -1 in case of any explicit error
      */
-    unsigned int ReadFile(void* file, void* lpBuf, int64_t uiBufSize)
+    ssize_t ReadFile(void* file, void* lpBuf, size_t uiBufSize)
     {
       return XBMC_read_file(m_Handle, m_Callbacks, file, lpBuf, uiBufSize);
     }
@@ -399,9 +414,11 @@ namespace ADDON
      * @param file The file handle to write to.
      * @param lpBuf The data to write.
      * @param uiBufSize Size of the data to write.
-     * @return The number of bytes read.
+     * @return number of successfully written bytes if any bytes were written,
+     *         zero if no bytes were written and no detectable error occur,
+     *         -1 in case of any explicit error
      */
-    int WriteFile(void* file, const void* lpBuf, int64_t uiBufSize)
+    ssize_t WriteFile(void* file, const void* lpBuf, size_t uiBufSize)
     {
       return XBMC_write_file(m_Handle, m_Callbacks, file, lpBuf, uiBufSize);
     }
@@ -560,11 +577,12 @@ namespace ADDON
     char* (*XBMC_get_localized_string)(void *HANDLE, void* CB, int dwCode);
     char* (*XBMC_get_dvd_menu_language)(void *HANDLE, void* CB);
     void (*XBMC_free_string)(void *HANDLE, void* CB, char* str);
+    int (*XBMC_execute_builtin_function)(void *HANDLE, void* CB, const char *execString);
     void* (*XBMC_open_file)(void *HANDLE, void* CB, const char* strFileName, unsigned int flags);
     void* (*XBMC_open_file_for_write)(void *HANDLE, void* CB, const char* strFileName, bool bOverWrite);
-    unsigned int (*XBMC_read_file)(void *HANDLE, void* CB, void* file, void* lpBuf, int64_t uiBufSize);
+    ssize_t (*XBMC_read_file)(void *HANDLE, void* CB, void* file, void* lpBuf, size_t uiBufSize);
     bool (*XBMC_read_file_string)(void *HANDLE, void* CB, void* file, char *szLine, int iLineLength);
-    int (*XBMC_write_file)(void *HANDLE, void* CB, void* file, const void* lpBuf, int64_t uiBufSize);
+    ssize_t(*XBMC_write_file)(void *HANDLE, void* CB, void* file, const void* lpBuf, size_t uiBufSize);
     void (*XBMC_flush_file)(void *HANDLE, void* CB, void* file);
     int64_t (*XBMC_seek_file)(void *HANDLE, void* CB, void* file, int64_t iFilePosition, int iWhence);
     int (*XBMC_truncate_file)(void *HANDLE, void* CB, void* file, int64_t iSize);

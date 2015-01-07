@@ -20,3 +20,7 @@ msgctxt "#30000"
 msgid "SlTV General"
 msgstr "Obecné"
 
+msgctxt "#30401"
+msgid "SlTV PlayTimeshift"
+msgstr "Přehrát ze záznamu"
+

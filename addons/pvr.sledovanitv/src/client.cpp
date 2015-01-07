@@ -108,6 +108,12 @@ extern "C"
 
 		ADDON_ReadSettings();
 
+		PVR_MENUHOOK playFromRecord;
+		playFromRecord.category = PVR_MENUHOOK_EPG;
+		playFromRecord.iHookId = 1;
+		playFromRecord.iLocalizedStringId = 30401;
+		PVR->AddMenuHook(&playFromRecord);
+
 		m_data = new PVRData;
 		m_CurStatus = ADDON_STATUS_OK;
 		m_bCreated = true;
@@ -217,6 +223,14 @@ extern "C"
 		*iTotal = 1024 * 1024 * 1024;
 		*iUsed = 0;
 		return PVR_ERROR_NO_ERROR;
+	}
+
+	PVR_ERROR CallMenuHook(const PVR_MENUHOOK &menuhook, const PVR_MENUHOOK_DATA &item)
+	{
+		if (m_data)
+			return m_data->CallMenuHook(menuhook, item);
+		
+		return PVR_ERROR_SERVER_ERROR;
 	}
 
 	PVR_ERROR GetEPGForChannel(ADDON_HANDLE handle, const PVR_CHANNEL &channel, time_t iStart, time_t iEnd)
@@ -358,7 +372,6 @@ extern "C"
 
 	/** UNUSED API FUNCTIONS */
 	PVR_ERROR DialogChannelScan(void) { return PVR_ERROR_NOT_IMPLEMENTED; }
-	PVR_ERROR CallMenuHook(const PVR_MENUHOOK &menuhook, const PVR_MENUHOOK_DATA &item) { return PVR_ERROR_NOT_IMPLEMENTED; }
 	PVR_ERROR DeleteChannel(const PVR_CHANNEL &channel) { return PVR_ERROR_NOT_IMPLEMENTED; }
 	PVR_ERROR RenameChannel(const PVR_CHANNEL &channel) { return PVR_ERROR_NOT_IMPLEMENTED; }
 	PVR_ERROR MoveChannel(const PVR_CHANNEL &channel) { return PVR_ERROR_NOT_IMPLEMENTED; }

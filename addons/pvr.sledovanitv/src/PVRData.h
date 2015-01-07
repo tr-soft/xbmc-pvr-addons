@@ -84,13 +84,18 @@ class PVRData
 		bool TryToPairDevice(void);
 		bool TryToLoginDevice(void);
 		bool ApiCall(const std::string& command, const std::string& arguments, Json::Value& json_response);
+		int CreateEpgCode(const std::string &eventId, time_t start, int channelId);
+		bool BreakEpgCode(int epgCode, time_t *start, int *channelId);
 	public:
 		PVRData(void);
 		virtual ~PVRData(void);
 
+		virtual PVR_ERROR CallMenuHook(const PVR_MENUHOOK &menuhook, const PVR_MENUHOOK_DATA &item);
+
 		virtual int GetChannelsAmount(void);
 		virtual PVR_ERROR GetChannels(ADDON_HANDLE handle, bool bRadio);
 		virtual bool GetChannel(const PVR_CHANNEL &channel, PVRChannel &myChannel);
+		virtual bool GetStreamRedirectedURL(const std::string source, std::string &destination);
 		virtual const char *GetLiveStreamURL(const PVR_CHANNEL &channel);
 
 		virtual int GetChannelGroupsAmount(void);
