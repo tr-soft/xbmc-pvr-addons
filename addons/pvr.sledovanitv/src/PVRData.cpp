@@ -518,8 +518,9 @@ int PVRData::CreateEpgCode(const std::string &eventId, time_t start, int channel
 	tm.tm_hour = 0;
 	tm.tm_min = 0;
 	tm.tm_sec = 0;
+	tm.tm_isdst = 0;
 
-	int trel = (int)(difftime(start, mktime(&tm)) / 60) & 0xffffff;
+	int trel = (int)((start - mktime(&tm)) / 60) & 0xffffff;
 	return ((trel << 8) | channelId);
 }
 
@@ -532,6 +533,7 @@ bool PVRData::BreakEpgCode(int epgCode, time_t *start, int *channelId)
 	tm.tm_hour = 0;
 	tm.tm_min = 0;
 	tm.tm_sec = 0;
+	tm.tm_isdst = 0;
 
 	if (start)
 		*start = mktime(&tm) + ((epgCode >> 8) * 60);
@@ -764,47 +766,50 @@ bool PVRData::GetStreamRedirectedURL(const std::string source, std::string &dest
 				SEND_RQ(buffer.c_str());
 
 				char c1[1];
-				int l, line_length;
+				int l, line_length = 0;
 				bool loop = true;
 				bool bHeader = false;
 
 				while (loop)
 				{
 					timeval tv;
-					tv.tv_sec = 3;
+					tv.tv_sec = 10;
 					tv.tv_usec = 0;
 
 					FD_SET_TYPE readerSet;
 					FD_ZERO(&readerSet);
 					FD_SET(sock, &readerSet);
 
-					if (select(sock, &readerSet, NULL, NULL, &tv) > 0)
+					if (select(sock + 1, &readerSet, NULL, NULL, &tv) > 0)
 					{
-						l = recv(sock, c1, 1, 0);
-						if (l < 0)
-							loop = false;
-						if (c1[0] == '\n')
+						if (FD_ISSET(sock, &readerSet))
 						{
-							message += actualLine + "\n";
-							if (line_length == 0)
+							l = recv(sock, c1, 1, 0);
+							if (l < 0)
 								loop = false;
-							line_length = 0;
-							if (message.find("302 Found") != std::string::npos)
-								bHeader = true;
-							if (bHeader)
+							if (c1[0] == '\n')
 							{
-								if (actualLine.find("Location: ") == 0)
+								message += actualLine + "\n";
+								if (line_length == 0)
+									loop = false;
+								line_length = 0;
+								if (message.find("302 Found") != std::string::npos)
+									bHeader = true;
+								if (bHeader)
 								{
-									destination = actualLine.substr(10, actualLine.length() - 10);
-									result = true;
+									if (actualLine.find("Location: ") == 0)
+									{
+										destination = actualLine.substr(10, actualLine.length() - 10);
+										result = true;
+									}
 								}
+								actualLine = "";
 							}
-							actualLine = "";
-						}
-						else if (c1[0] != '\r')
-						{
-							actualLine += c1[0];
-							line_length++;
+							else if (c1[0] != '\r')
+							{
+								actualLine += c1[0];
+								line_length++;
+							}
 						}
 					}
 					else
