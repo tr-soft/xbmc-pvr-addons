@@ -763,32 +763,45 @@ bool PVRData::GetStreamRedirectedURL(const std::string source, std::string &dest
 
 				while (loop)
 				{
-					l = recv(sock, c1, 1, 0);
-					if (l < 0)
-						loop = false;
-					if (c1[0] == '\n')
+					timeval tv;
+					tv.tv_sec = 3;
+					tv.tv_usec = 0;
+
+					FD_SET readerSet;
+					FD_ZERO(&readerSet);
+					FD_SET(sock, &readerSet);
+
+					if (select(sock, &readerSet, NULL, NULL, &tv) > 0)
 					{
-						message += actualLine + "\n";
-						if (line_length == 0)
+						l = recv(sock, c1, 1, 0);
+						if (l < 0)
 							loop = false;
-						line_length = 0;
-						if (message.find("302 Found") != std::string::npos)
-							bHeader = true;
-						if (bHeader)
+						if (c1[0] == '\n')
 						{
-							if (actualLine.find("Location: ") == 0)
+							message += actualLine + "\n";
+							if (line_length == 0)
+								loop = false;
+							line_length = 0;
+							if (message.find("302 Found") != std::string::npos)
+								bHeader = true;
+							if (bHeader)
 							{
-								destination = actualLine.substr(10, actualLine.length() - 10);
-								result = true;
+								if (actualLine.find("Location: ") == 0)
+								{
+									destination = actualLine.substr(10, actualLine.length() - 10);
+									result = true;
+								}
 							}
+							actualLine = "";
 						}
-						actualLine = "";
+						else if (c1[0] != '\r')
+						{
+							actualLine += c1[0];
+							line_length++;
+						}
 					}
-					else if (c1[0] != '\r')
-					{
-						actualLine += c1[0];
-						line_length++;
-					}
+					else
+						loop = false;
 				}
 
 				message = "";
