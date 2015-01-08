@@ -26,7 +26,7 @@
 #include "tinyxml/XMLUtils.h"
 #include "PVRData.h"
 #include "DialogLogin.h"
-#include "DialogOk.h"
+#include "DialogOK.h"
 #include "client.h"
 #include "utils.h"
 #include "./uri.h"
