@@ -20,7 +20,7 @@
  *
  */
 
-#include "DialogOk.h"
+#include "DialogOK.h"
 #include "libXBMC_gui.h"
 
 using namespace ADDON;
