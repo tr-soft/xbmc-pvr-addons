@@ -20,6 +20,7 @@ libpvrsledovanitv_addon_la_SOURCES = src/client.cpp \
 	src/PVRData.cpp \
 	src/utils.cpp \
 	src/DialogLogin.cpp \
+	src/DialogOK.cpp \
 	src/uri.cpp
 libpvrsledovanitv_addon_la_LDFLAGS = @TARGET_LDFLAGS@
 

@@ -46,6 +46,10 @@ using namespace PLATFORM;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #endif
 
 #define SEND_RQ(MSG) \
