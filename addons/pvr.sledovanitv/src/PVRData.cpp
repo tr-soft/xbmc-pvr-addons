@@ -40,6 +40,7 @@ using namespace PLATFORM;
 #include <winsock2.h>
 #pragma warning(default:4005)
 #define close(s) closesocket(s) 
+#define FD_SET_TYPE	FD_SET
 #else
 #include <unistd.h>
 #include <netdb.h>
@@ -50,6 +51,8 @@ using namespace PLATFORM;
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
+#define FD_SET_TYPE	fd_set
 #endif
 
 #define SEND_RQ(MSG) \
@@ -771,7 +774,7 @@ bool PVRData::GetStreamRedirectedURL(const std::string source, std::string &dest
 					tv.tv_sec = 3;
 					tv.tv_usec = 0;
 
-					FD_SET readerSet;
+					FD_SET_TYPE readerSet;
 					FD_ZERO(&readerSet);
 					FD_SET(sock, &readerSet);
 
