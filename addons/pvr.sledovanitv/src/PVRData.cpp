@@ -26,6 +26,7 @@
 #include "tinyxml/XMLUtils.h"
 #include "PVRData.h"
 #include "DialogLogin.h"
+#include "DialogOk.h"
 #include "client.h"
 #include "utils.h"
 #include "./uri.h"
@@ -593,7 +594,21 @@ PVR_ERROR PVRData::CallMenuHook(const PVR_MENUHOOK &menuhook, const PVR_MENUHOOK
 
 											if (GetStreamRedirectedURL(streamUrl, redirected))
 												XBMC->ExecuteBuiltinFunction(("PlayMedia(" + redirected + ")").c_str());
+											else
+												XBMC->Log(LOG_ERROR, "Failed to get redirected URL for show id %s", eventId.c_str());
 										}
+									}
+									else
+									{
+										CDialogOk *dial = new CDialogOk(XBMC, GUI, XBMC->GetLocalizedString(30100));
+										if (dial)
+										{
+											dial->Show();
+											delete (dial);
+											dial = NULL;
+										}
+
+										XBMC->Log(LOG_ERROR, "Show id %s not available for view", eventId.c_str());
 									}
 								}
 							}

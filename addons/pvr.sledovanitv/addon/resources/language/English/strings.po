@@ -20,6 +20,10 @@ msgctxt "#30000"
 msgid "SlTV General"
 msgstr "General"
 
+msgctxt "#30100"
+msgid "SlTV TimeshiftNotAvail"
+msgstr "Show no longer available for timeshift"
+
 msgctxt "#30401"
 msgid "SlTV PlayTimeshift"
 msgstr "Play recorded"

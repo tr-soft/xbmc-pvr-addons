@@ -97,6 +97,7 @@ copy $(TargetPath) D:\Programy\Video\Kodi\addons\pvr.sledovanitv</Command>
   <ItemGroup>
     <ClCompile Include="..\..\src\client.cpp" />
     <ClCompile Include="..\..\src\DialogLogin.cpp" />
+    <ClCompile Include="..\..\src\DialogOK.cpp" />
     <ClCompile Include="..\..\src\PVRData.cpp" />
     <ClCompile Include="..\..\src\uri.cpp" />
     <ClCompile Include="..\..\src\utils.cpp" />
