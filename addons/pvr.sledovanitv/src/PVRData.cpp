@@ -329,12 +329,18 @@ bool PVRData::FillEpgForChannels(time_t iStart, time_t iEnd)
 								tm.tm_mon--;
 								tm.tm_sec = 0;
 								tag.startTime = mktime(&tm);
+								if (tm.tm_isdst)
+									tag.startTime -= 60 * 60;
+
+								memset(&tm, 0, sizeof(struct tm));
 
 								std::sscanf(entry["endTime"].asCString(), "%d-%d-%d %d:%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min);
 								tm.tm_year -= 1900;
 								tm.tm_mon--;
 								tm.tm_sec = 0;
 								tag.endTime = mktime(&tm);
+								if (tm.tm_isdst)
+									tag.endTime -= 60 * 60;
 
 								if (myChannel.epg.size() > 0)
 								{
